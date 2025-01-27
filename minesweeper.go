@@ -101,11 +101,11 @@ func (b Board) placeMines(minesCount int, seed int64) error {
 			// logger.Print(log.Info("Check cell"), log.Str("ok", fmt.Sprintf("%v", mines[c])))
 			if _, ok := mines[c]; ok {
 				b[i][j].IsMine = true
-				c++
 				logger.Print(log.Info("Mine placed"),
 					log.Str("row", fmt.Sprintf("%d", i)),
 					log.Str("column", fmt.Sprintf("%d", j)))
 			}
+			c++
 		}
 	}
 	return nil
