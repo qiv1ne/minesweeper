@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/qiv1ne/log"
@@ -19,6 +18,11 @@ var (
 		Date:       false,
 		Time:       false,
 	})
+)
+
+const (
+	Lose = 1 << iota
+	Win
 )
 
 // Represent a one minesweeper board cell.
@@ -61,6 +65,7 @@ type BoardConfig struct {
 	Seed   int64 // Seed for generating board
 }
 
+// NewSeed function generate int64 seed from time.Now().Unix()
 func NewSeed() int64 {
 	return rand.New(rand.NewSource(time.Now().Unix())).Int63()
 }
@@ -69,13 +74,12 @@ func NewSeed() int64 {
 // Like params function accept 1D board(you can use To1D() function) and count of mines
 // It panic if error occurred.
 func (b Board) placeMines(minesCount int, seed int64) error {
-	logger.Print(log.Info("Placing mines"))
 	if seed <= 0 {
 		err := errors.New("Seed can't be <= 0. Use NewSeed() function to generate new seed.")
-		logger.Print(log.Error(err))
 		return err
 	}
-	logger.Print(log.Info("check count of mines"), log.Str(strconv.Itoa(len(b)), strconv.Itoa(len(b[0]))))
+
+	// If count of mines more than count of cells in board.
 	if len(b)*len(b[0]) <= minesCount {
 		err := errors.New("Board can't contain mines more than it length")
 		logger.Print(log.Error(err))
@@ -85,25 +89,23 @@ func (b Board) placeMines(minesCount int, seed int64) error {
 	// Create random generator with given seed.
 	r := rand.New(rand.NewSource(seed))
 
+	// Create map for saving unique places for mines.
 	mines := make(map[int]struct{}, minesCount)
 	for len(mines) < minesCount {
 		rand := r.Intn(len(b) * len(b[0]))
+		// If place not in the map:
 		if _, ok := mines[rand]; !ok {
 			mines[rand] = struct{}{}
 		}
 	}
 
-	logger.Print(log.Info("Mines calculated"),
-		log.Str("placed mines", fmt.Sprintf("%v", mines)))
+	// Every iteration increase c variable for count when c will equal number of place in the map.
 	var c int
 	for i := range b {
 		for j := range b[i] {
-			// logger.Print(log.Info("Check cell"), log.Str("ok", fmt.Sprintf("%v", mines[c])))
+			// If c is equals number in the map:
 			if _, ok := mines[c]; ok {
 				b[i][j].IsMine = true
-				logger.Print(log.Info("Mine placed"),
-					log.Str("row", fmt.Sprintf("%d", i)),
-					log.Str("column", fmt.Sprintf("%d", j)))
 			}
 			c++
 		}
@@ -143,22 +145,22 @@ func (b Board) Print() {
 
 // NewMineBoard function create filled MineBoard struct
 func NewMineBoard(opts BoardConfig) (*MineBoard, error) {
-	user, err := createBoard(opts)
+	u, err := createBoard(opts)
 	if err != nil {
 		return nil, err
 	}
-	real, err := createBoard(opts)
+	r, err := createBoard(opts)
 	if err != nil {
 		return nil, err
 	}
-	err = real.RevealAll()
+	err = r.RevealAll()
 	if err != nil {
 		return nil, err
 	}
 	return &MineBoard{
 		BoardConfig: opts,
-		Real:        real,
-		User:        user,
+		Real:        r,
+		User:        u,
 		MinesRemain: opts.Mines,
 	}, nil
 }
@@ -331,4 +333,42 @@ func (b Board) placeNumbers() error {
 		}
 	}
 	return nil
+}
+
+// OpenCell function open cell in user board[y][x]
+// If it mine: return Lose const
+// If nothing happend: return 0
+// Return -1 and error if x or y out of range
+func (board *MineBoard) OpenCell(x, y int) (int, error) {
+	if x > len(board.User[0]) || x <= 0 {
+		return -1, errors.New("x is out of the row")
+	}
+	if y > len(board.User) || y <= 0 {
+		return -1, errors.New("y is out of the row")
+	}
+
+	if board.User[y-1][x-1].IsMine {
+		return Lose, nil
+	}
+	board.User[y-1][x-1].Revealed = true
+	return 0, nil
+}
+
+// PlaceFlag function mark cell in user board[y][x].
+// If it last mine: return Win const.
+// Return -1 and error if x or y out of range.
+func (board *MineBoard) PlaceFlag(x, y int) (int, error) {
+	if x > len(board.User[0]) || x <= 0 {
+		return -1, errors.New("x is out of the row")
+	}
+	if y > len(board.User) || y <= 0 {
+		return -1, errors.New("y is out of the row")
+	}
+
+	if board.MinesRemain <= 1 {
+		return Win, nil
+	}
+	board.User[y][x].Flagged = true
+	board.MinesRemain--
+	return 0, nil
 }
