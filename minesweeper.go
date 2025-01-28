@@ -4,20 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"os"
 	"time"
-
-	"github.com/qiv1ne/log"
-)
-
-var (
-	logger, _ = log.New(os.Stdin, &log.Opts{
-		FuncName:   true,
-		FileName:   true,
-		LineNumber: true,
-		Date:       false,
-		Time:       false,
-	})
 )
 
 const (
@@ -42,17 +29,17 @@ type Cell struct {
 	Revealed bool // If user reveal this cell it true.
 }
 
-// Board is alias for [][]Cell type. I create it for linking functions to type.
-type Board [][]Cell
+// board is alias for [][]Cell type. I create it for linking functions to type.
+type board [][]Cell
 
 // MineBoard struct defines game map.
 type MineBoard struct {
 	BoardConfig
 
 	// Real represent the game board with mines.
-	Real Board
+	Real board
 	// User represent user's board with flags and not revealed mines.
-	User Board
+	User board
 	// MinesRemain represent how many unflaged mines on the user board.
 	MinesRemain int
 }
@@ -73,19 +60,7 @@ func NewSeed() int64 {
 // The placeMines function place mines in Board.
 // Like params function accept 1D board(you can use To1D() function) and count of mines
 // It panic if error occurred.
-func (b Board) placeMines(minesCount int, seed int64) error {
-	if seed <= 0 {
-		err := errors.New("Seed can't be <= 0. Use NewSeed() function to generate new seed.")
-		return err
-	}
-
-	// If count of mines more than count of cells in board.
-	if len(b)*len(b[0]) <= minesCount {
-		err := errors.New("Board can't contain mines more than it length")
-		logger.Print(log.Error(err))
-		return err
-	}
-
+func (b board) placeMines(minesCount int, seed int64) {
 	// Create random generator with given seed.
 	r := rand.New(rand.NewSource(seed))
 
@@ -110,11 +85,10 @@ func (b Board) placeMines(minesCount int, seed int64) error {
 			c++
 		}
 	}
-	return nil
 }
 
 // The PrintBroadGracefully is debug function to see how the board look.
-func (b Board) Print() {
+func (b board) Print() {
 	for _, row := range b {
 		for _, cell := range row {
 			if !cell.Revealed {
@@ -144,46 +118,50 @@ func (b Board) Print() {
 }
 
 // NewMineBoard function create filled MineBoard struct
-func NewMineBoard(opts BoardConfig) (*MineBoard, error) {
-	u, err := createBoard(opts)
+func NewMineBoard(config BoardConfig) (*MineBoard, error) {
+	switch {
+	case config.Height <= 1:
+		return nil, errors.New("height can't be less than 2")
+	case config.Width <= 1:
+		return nil, errors.New("width can't be less than 2")
+	case config.Mines <= 0:
+		return nil, errors.New("count of mines can't be less than 1")
+	case config.Seed <= 0:
+		err := errors.New("Seed can't be <= 0. Use NewSeed() function to generate random seed.")
+		return nil, err
+	case config.Height*config.Width <= config.Mines:
+		return nil, errors.New("Board can't contain mines more than it length")
+	}
+
+	u, err := createBoard(config)
 	if err != nil {
 		return nil, err
 	}
-	r, err := createBoard(opts)
+	r, err := createBoard(config)
 	if err != nil {
 		return nil, err
 	}
-	err = r.RevealAll()
+	err = r.revealAll()
 	if err != nil {
 		return nil, err
 	}
 	return &MineBoard{
-		BoardConfig: opts,
+		BoardConfig: config,
 		Real:        r,
 		User:        u,
-		MinesRemain: opts.Mines,
+		MinesRemain: config.Mines,
 	}, nil
 }
 
-// The CreateEmptyBoard create empty matrix of Cell.
-func createBoard(opts BoardConfig) (Board, error) {
-	logger.Print(log.Info("creating new board"))
-	// Creating empty board
-	board := make(Board, opts.Height)
+// The createBoard create matrix of Cell and fill it with mines and numbers.
+func createBoard(config BoardConfig) (board, error) {
+	board := make(board, config.Height)
 	for i := range board {
-		board[i] = make([]Cell, opts.Width)
+		board[i] = make([]Cell, config.Width)
 	}
+	board.placeMines(config.Mines, config.Seed)
+	board.placeNumbers()
 
-	if opts.Mines != 0 {
-		err := board.placeMines(opts.Mines, opts.Seed)
-		if err != nil {
-			return board, err
-		}
-		err = board.placeNumbers()
-		if err != nil {
-			return board, err
-		}
-	}
 	return board, nil
 }
 
@@ -191,8 +169,7 @@ func createBoard(opts BoardConfig) (Board, error) {
 // First purpose of using the 1D board is to put a mines simpler.
 // Function accept the 2D board and return 1D board.
 // If the error occurred due the process of a board function is panic.
-func (b Board) To1D() ([]Cell, error) {
-	logger.Print(log.Info("Converting 2D board to 1D"))
+func (b board) To1D() ([]Cell, error) {
 	if len(b) == 0 {
 		return make([]Cell, 0), errors.New("board is empty")
 	}
@@ -207,10 +184,8 @@ func (b Board) To1D() ([]Cell, error) {
 	return board1D, nil
 }
 
-func (b Board) RevealAll() error {
-	if len(b) == 0 {
-		return errors.New("board is empty")
-	}
+// RevealAll function set all Cell.Revealed to true
+func (b board) revealAll() error {
 	for i := range b {
 		for j := range b[i] {
 			b[i][j].Revealed = true
@@ -219,10 +194,8 @@ func (b Board) RevealAll() error {
 	return nil
 }
 
-func (b Board) placeNumbers() error {
-	if len(b) == 0 {
-		return errors.New("board can't be empty")
-	}
+// placeNumbers function calculate count of mines around every not mine Cell
+func (b board) placeNumbers() {
 	// Another big comment for my understanding
 	/*
 			We have board:
@@ -332,7 +305,6 @@ func (b Board) placeNumbers() error {
 			}
 		}
 	}
-	return nil
 }
 
 // OpenCell function open cell in user board[y][x]
@@ -340,13 +312,21 @@ func (b Board) placeNumbers() error {
 // If nothing happend: return 0
 // Return -1 and error if x or y out of range
 func (board *MineBoard) OpenCell(x, y int) (int, error) {
+	if board == nil {
+		return -1, errors.New("board is nil")
+	}
+	if len(board.User) <= 1 {
+		return -1, errors.New("board is too small, less than 2 row")
+	}
+	if len(board.User[0]) <= 1 {
+		return -1, errors.New("board is too small, less than 2 column")
+	}
 	if x > len(board.User[0]) || x <= 0 {
 		return -1, errors.New("x is out of the row")
 	}
 	if y > len(board.User) || y <= 0 {
 		return -1, errors.New("y is out of the row")
 	}
-
 	if board.User[y-1][x-1].IsMine {
 		return Lose, nil
 	}
