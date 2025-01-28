@@ -106,7 +106,7 @@ func TestPlaceFlagOutsideOfBoard(t *testing.T) {
 		Mines:  4,
 		Seed:   1,
 	})
-	_, err := b.PlaceFlag(1, 1)
+	_, err := b.PlaceFlag(100, 100)
 	if err == nil {
 		t.Fatalf("Want error, get: %v", err)
 	}

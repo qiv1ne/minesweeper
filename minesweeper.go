@@ -1,4 +1,4 @@
-package main
+package minesweeper
 
 import (
 	"errors"
@@ -91,12 +91,12 @@ func (b board) placeMines(minesCount int, seed int64) {
 func (b board) Print() {
 	for _, row := range b {
 		for _, cell := range row {
-			if !cell.Revealed {
-				fmt.Print("■ ")
-				continue
-			}
 			if cell.Flagged {
 				fmt.Print("⚑ ")
+				continue
+			}
+			if !cell.Revealed {
+				fmt.Print("■ ")
 				continue
 			}
 			if cell.IsMine {
@@ -338,17 +338,22 @@ func (board *MineBoard) OpenCell(x, y int) (int, error) {
 // If it last mine: return Win const.
 // Return -1 and error if x or y out of range.
 func (board *MineBoard) PlaceFlag(x, y int) (int, error) {
-	if x > len(board.User[0]) || x <= 0 {
-		return -1, errors.New("x is out of the row")
+	if len(board.User) <= 2 {
+		return -1, errors.New("count of rows in user board less than 2")
+	}
+	if len(board.User[0]) <= 2 {
+		return -1, errors.New("count of columns in user board less than 2")
 	}
 	if y > len(board.User) || y <= 0 {
 		return -1, errors.New("y is out of the row")
 	}
-
+	if x > len(board.User[0]) || x <= 0 {
+		return -1, errors.New("x is out of the row")
+	}
 	if board.MinesRemain <= 1 {
 		return Win, nil
 	}
-	board.User[y][x].Flagged = true
+	board.User[y-1][x-1].Flagged = true
 	board.MinesRemain--
 	return 0, nil
 }
