@@ -6,7 +6,7 @@ import (
 
 var (
 	b = board(
-		[][]Cell{
+		[][]cell{
 			{
 				{Empty: false, MinesAround: 1, Flagged: false, IsMine: false, Revealed: true},
 				{Empty: false, MinesAround: 1, Flagged: false, IsMine: true, Revealed: true},

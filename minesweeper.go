@@ -13,7 +13,7 @@ const (
 )
 
 // Represent a one minesweeper board cell.
-type Cell struct {
+type cell struct {
 	// Cell is empty when it don't contain the mine or number.
 	Empty bool
 
@@ -30,26 +30,27 @@ type Cell struct {
 }
 
 // board is alias for [][]Cell type. I create it for linking functions to type.
-type board [][]Cell
+type board [][]cell
 
 // MineBoard struct defines game map.
 type MineBoard struct {
 	BoardConfig
 
-	// Real represent the game board with mines.
-	Real board
-	// User represent user's board with flags and not revealed mines.
-	User board
+	// Board represent game board with cells.
+	Board board
 	// MinesRemain represent how many unflaged mines on the user board.
 	MinesRemain int
 }
 
 // Struct BoardConfig contain essential options for create board.
 type BoardConfig struct {
-	Width  int   // Width of the board.
-	Height int   // Height of the board.
-	Mines  int   // Count of the mines.
-	Seed   int64 // Seed for generating board
+	Width  int // Width of the board.
+	Height int // Height of the board.
+	Mines  int // Count of the mines.
+
+	// Seed for generating board.
+	// Use GenerateSeed() function to generate random seed.
+	Seed int64
 }
 
 // NewSeed function generate int64 seed from time.Now().Unix()
@@ -58,27 +59,25 @@ func NewSeed() int64 {
 }
 
 // The placeMines function place mines in Board.
-// Like params function accept 1D board(you can use To1D() function) and count of mines
-// It panic if error occurred.
 func (b board) placeMines(minesCount int, seed int64) {
 	// Create random generator with given seed.
 	r := rand.New(rand.NewSource(seed))
 
-	// Create map for saving unique places for mines.
+	// Create map for saving unique spots for mines.
 	mines := make(map[int]struct{}, minesCount)
 	for len(mines) < minesCount {
 		rand := r.Intn(len(b) * len(b[0]))
-		// If place not in the map:
+		// If place is not in the map:
 		if _, ok := mines[rand]; !ok {
 			mines[rand] = struct{}{}
 		}
 	}
 
-	// Every iteration increase c variable for count when c will equal number of place in the map.
+	// Variable 'c' represent every cell in the board.
 	var c int
 	for i := range b {
 		for j := range b[i] {
-			// If c is equals number in the map:
+			// If 'c' is spot for mine:
 			if _, ok := mines[c]; ok {
 				b[i][j].IsMine = true
 			}
@@ -87,7 +86,7 @@ func (b board) placeMines(minesCount int, seed int64) {
 	}
 }
 
-// The PrintBroadGracefully is debug function to see how the board look.
+// The Print is function to print board to the stdout.
 func (b board) Print() {
 	for _, row := range b {
 		for _, cell := range row {
@@ -157,31 +156,12 @@ func NewMineBoard(config BoardConfig) (*MineBoard, error) {
 func createBoard(config BoardConfig) (board, error) {
 	board := make(board, config.Height)
 	for i := range board {
-		board[i] = make([]Cell, config.Width)
+		board[i] = make([]cell, config.Width)
 	}
 	board.placeMines(config.Mines, config.Seed)
 	board.placeNumbers()
 
 	return board, nil
-}
-
-// To1D transform given 2D board to a 1D board.
-// First purpose of using the 1D board is to put a mines simpler.
-// Function accept the 2D board and return 1D board.
-// If the error occurred due the process of a board function is panic.
-func (b board) To1D() ([]Cell, error) {
-	if len(b) == 0 {
-		return make([]Cell, 0), errors.New("board is empty")
-	}
-	// Create result 1D board with capacity of left side * top side
-	board1D := make([]Cell, len(b)*len(b[0]))
-
-	for i := range b {
-		for j := range b[i] {
-			board1D[i+j] = b[i][j]
-		}
-	}
-	return board1D, nil
 }
 
 // RevealAll function set all Cell.Revealed to true
