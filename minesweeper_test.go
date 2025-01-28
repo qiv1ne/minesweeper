@@ -42,7 +42,7 @@ func TestOpenCell(t *testing.T) {
 		Seed:   1,
 	})
 	b.OpenCell(1, 1)
-	if b.User[0][0].Revealed == false {
+	if b.Board[0][0].Revealed == false {
 		t.Fatalf("Want user board[0][0].Revealed = true, get: false")
 	}
 }
@@ -87,8 +87,8 @@ func TestPlaceFlag(t *testing.T) {
 		Seed:   1,
 	})
 	b.PlaceFlag(1, 1)
-	if b.User[0][0].Flagged == false {
-		t.Fatalf("Want user board[0][0].Flagged = true, get: %v", b.User[0][0].Flagged)
+	if b.Board[0][0].Flagged == false {
+		t.Fatalf("Want user board[0][0].Flagged = true, get: %v", b.Board[0][0].Flagged)
 	}
 }
 

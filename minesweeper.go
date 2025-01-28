@@ -132,22 +132,13 @@ func NewMineBoard(config BoardConfig) (*MineBoard, error) {
 		return nil, errors.New("Board can't contain mines more than it length")
 	}
 
-	u, err := createBoard(config)
-	if err != nil {
-		return nil, err
-	}
-	r, err := createBoard(config)
-	if err != nil {
-		return nil, err
-	}
-	err = r.revealAll()
+	board, err := createBoard(config)
 	if err != nil {
 		return nil, err
 	}
 	return &MineBoard{
 		BoardConfig: config,
-		Real:        r,
-		User:        u,
+		Board:       board,
 		MinesRemain: config.Mines,
 	}, nil
 }
@@ -295,22 +286,22 @@ func (board *MineBoard) OpenCell(x, y int) (int, error) {
 	if board == nil {
 		return -1, errors.New("board is nil")
 	}
-	if len(board.User) <= 1 {
+	if len(board.Board) <= 1 {
 		return -1, errors.New("board is too small, less than 2 row")
 	}
-	if len(board.User[0]) <= 1 {
+	if len(board.Board[0]) <= 1 {
 		return -1, errors.New("board is too small, less than 2 column")
 	}
-	if x > len(board.User[0]) || x <= 0 {
+	if x > len(board.Board[0]) || x <= 0 {
 		return -1, errors.New("x is out of the row")
 	}
-	if y > len(board.User) || y <= 0 {
+	if y > len(board.Board) || y <= 0 {
 		return -1, errors.New("y is out of the row")
 	}
-	if board.User[y-1][x-1].IsMine {
+	if board.Board[y-1][x-1].IsMine {
 		return Lose, nil
 	}
-	board.User[y-1][x-1].Revealed = true
+	board.Board[y-1][x-1].Revealed = true
 	return 0, nil
 }
 
@@ -318,22 +309,22 @@ func (board *MineBoard) OpenCell(x, y int) (int, error) {
 // If it last mine: return Win const.
 // Return -1 and error if x or y out of range.
 func (board *MineBoard) PlaceFlag(x, y int) (int, error) {
-	if len(board.User) <= 2 {
+	if len(board.Board) <= 2 {
 		return -1, errors.New("count of rows in user board less than 2")
 	}
-	if len(board.User[0]) <= 2 {
+	if len(board.Board[0]) <= 2 {
 		return -1, errors.New("count of columns in user board less than 2")
 	}
-	if y > len(board.User) || y <= 0 {
+	if y > len(board.Board) || y <= 0 {
 		return -1, errors.New("y is out of the row")
 	}
-	if x > len(board.User[0]) || x <= 0 {
+	if x > len(board.Board[0]) || x <= 0 {
 		return -1, errors.New("x is out of the row")
 	}
 	if board.MinesRemain <= 1 {
 		return Win, nil
 	}
-	board.User[y-1][x-1].Flagged = true
+	board.Board[y-1][x-1].Flagged = true
 	board.MinesRemain--
 	return 0, nil
 }
