@@ -5,8 +5,8 @@ import (
 )
 
 var (
-	b = board(
-		[][]cell{
+	b = Board(
+		[][]Cell{
 			{
 				{Empty: false, MinesAround: 1, Flagged: false, IsMine: false, Revealed: true},
 				{Empty: false, MinesAround: 1, Flagged: false, IsMine: true, Revealed: true},

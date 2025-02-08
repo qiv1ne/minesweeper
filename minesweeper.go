@@ -12,8 +12,8 @@ const (
 	Win
 )
 
-// Represent a one minesweeper board cell.
-type cell struct {
+// Represent a one minesweeper board Cell.
+type Cell struct {
 	// Cell is empty when it don't contain the mine or number.
 	Empty bool
 
@@ -29,15 +29,15 @@ type cell struct {
 	Revealed bool // If user reveal this cell it true.
 }
 
-// board is alias for [][]Cell type. I create it for linking functions to type.
-type board [][]cell
+// Board is alias for [][]Cell type. I create it for linking functions to type.
+type Board [][]Cell
 
 // MineBoard struct defines game map.
 type MineBoard struct {
 	BoardConfig
 
 	// Board represent game board with cells.
-	Board board
+	Board Board
 	// MinesRemain represent how many unflaged mines on the user board.
 	MinesRemain int
 }
@@ -59,7 +59,7 @@ func NewSeed() int64 {
 }
 
 // The placeMines function place mines in Board.
-func (b board) placeMines(minesCount int, seed int64) {
+func (b Board) placeMines(minesCount int, seed int64) {
 	// Create random generator with given seed.
 	r := rand.New(rand.NewSource(seed))
 
@@ -87,7 +87,7 @@ func (b board) placeMines(minesCount int, seed int64) {
 }
 
 // The Print is function to print board to the stdout.
-func (b board) Print() {
+func (b Board) Print() {
 	for _, row := range b {
 		for _, cell := range row {
 			if cell.Flagged {
@@ -144,10 +144,10 @@ func NewMineBoard(config BoardConfig) (*MineBoard, error) {
 }
 
 // The createBoard create matrix of Cell and fill it with mines and numbers.
-func createBoard(config BoardConfig) (board, error) {
-	board := make(board, config.Height)
+func createBoard(config BoardConfig) (Board, error) {
+	board := make(Board, config.Height)
 	for i := range board {
-		board[i] = make([]cell, config.Width)
+		board[i] = make([]Cell, config.Width)
 	}
 	board.placeMines(config.Mines, config.Seed)
 	board.placeNumbers()
@@ -156,7 +156,7 @@ func createBoard(config BoardConfig) (board, error) {
 }
 
 // RevealAll function set all Cell.Revealed to true
-func (b board) revealAll() error {
+func (b Board) revealAll() error {
 	for i := range b {
 		for j := range b[i] {
 			b[i][j].Revealed = true
@@ -166,7 +166,7 @@ func (b board) revealAll() error {
 }
 
 // placeNumbers function calculate count of mines around every not mine Cell
-func (b board) placeNumbers() {
+func (b Board) placeNumbers() {
 	// Another big comment for my understanding
 	/*
 			We have board:
